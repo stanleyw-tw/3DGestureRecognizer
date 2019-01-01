@@ -1,7 +1,7 @@
 # 3DGestureRecognizer
 The 3D gesture recognizer is a robust gesture recognition system for devices with IMU data input.
 
-Implementation Hilight:
+Implementation Highlight:
 1. train mode → gesture library (optional)
 2. recongize mode
 3. calculate score heuristic to lower the rate of
