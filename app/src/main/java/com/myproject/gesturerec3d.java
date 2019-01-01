@@ -41,7 +41,7 @@ public class gesturerec3d extends GestureRecognizer {
 	public boolean DEBUG = true;
 	public boolean VERBOSE = false;
 	
-	public boolean ROTATE = false;
+	public boolean ROTATE = true;
 	public GestureLibrary gestureLibrary = null;
 	
 	public gesturerec3d(GestureLibrary glibrary, int resampleAmount)
@@ -222,16 +222,17 @@ public class gesturerec3d extends GestureRecognizer {
         int the top threee, detect at least two candidates of the same gesture id with a score >.55
         @param scoretable: scoretable sorted by score
         @return: recognized gesture code or invalid (-100) Gesture*/
-		Log.d("recognize_from_scoretable","Started!");
+		Log.d("recog_from_scortable","Started!");
 		int count_h1 = 0;
 		int count_h2 = 0;
 		// FOR-Schleife ist buggy!
+		//get sublist 0,1,2
 		for (Score s : (List<Score>) scoretable.subList(0, 2))
 		{
 			// high-probability match!
 			if (s.score > this.DETECTION_THRESHOLD*1.1)
 			{
-				Log.d("recognize_from_scortable","Item: "+ s.toString());
+				Log.d("recog_from_scortable","Item: "+ s.toString());
 				return s.gid;
 			}
 			// if not high prob, apply heuristic
@@ -240,25 +241,25 @@ public class gesturerec3d extends GestureRecognizer {
 			/*scoretable_cpy.remove(s);
 			scoretable_cpy = (ArrayList<Score>) scoretable_cpy.subList(0, 3);*/
 			scoretable_cpy = (ArrayList<Score>) scoretable.clone();
-			scoretable_cpy.remove(s);
+			if(scoretable_cpy.size() == 3) scoretable_cpy.remove(s);
 			
 			
 			if (s.score > this.DETECTION_THRESHOLD)
 			{
-				for (int i = 0; i < 2; i++)
+				for (int i = 0; i < scoretable_cpy.size(); i++)
 				{
 					Score other = scoretable_cpy.get(i);
-					Log.d("recognize_from_scortable","Other: "+ other.toString());
+					Log.d("recog_from_scortable","Other: "+ other.toString());
 					if (s.gid == other.gid && other.score >= this.DETECTION_THRESHOLD*0.95)
 					{
 						// heurstic 1
-						Log.d("recognize_from_scoretable", "h1++");
+						Log.d("recog_from_scoretable", "h1++");
 						count_h1++;
 						
 					}
 					if (s.gid == other.gid)
 					{
-						Log.d("recognize_from_scoretable", "h1++");
+						Log.d("recog_from_scoretable", "h1++");
 						count_h2++;
 					}
 					
@@ -269,12 +270,12 @@ public class gesturerec3d extends GestureRecognizer {
 			// see if heuristic has found likely match
 			if (count_h1 >0)
 			{
-				Log.i("recognize_from_scoretable", "Decided by H1");
+				Log.i("recog_from_scortable", "Decided by H1");
 				return s.gid;
 			}
 			else if (count_h2 >1)
 			{
-				Log.i("recognize_from_scoretable", "Decided by H2");
+				Log.i("recog_from_scortable", "Decided by H2");
 
 				return s.gid;
 			}
@@ -877,7 +878,7 @@ public class gesturerec3d extends GestureRecognizer {
 		                (float) (x*Math.sin(angle)+(1-Math.cos(angle))*y*z),
 		                (float) (1 + (1-Math.cos(angle))*(z*z-1))};
 		float[][] matrix = {rx,ry,rz};
-		if (DEBUG) Log.d("rotationMatrixWithVecor3", "rotation Matrix:" + matrix);
+		if (DEBUG) Log.d("rotationMatrixWithVec3", "rotation Matrix:" + matrix);
 		return matrix;
 	}
 	

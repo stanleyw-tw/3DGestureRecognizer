@@ -138,6 +138,7 @@ implements android.content.DialogInterface.OnClickListener
                             dataY.floatValue(),
                             dataZ.floatValue()};
                     if (recordingGestureTrace != null) {
+						Log.d("additem","additem");
                         recordingGestureTrace.add(traceItem);
                     }
 
