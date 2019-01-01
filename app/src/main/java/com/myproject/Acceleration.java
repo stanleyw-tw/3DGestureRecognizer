@@ -19,7 +19,8 @@ import android.view.View;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.*;
-import android.util.Log;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -42,6 +43,7 @@ implements android.content.DialogInterface.OnClickListener
 	private GestureRecognizer myGestureRecognizer = null;
 	
 	private ArrayList<float[]> recordingGestureTrace = null;
+	private static ReadWriteLock rwl = new ReentrantReadWriteLock();
 	private String recordingGestureIDString = "default";
 
 	//Next get the handle to the Sensor service
@@ -50,7 +52,7 @@ implements android.content.DialogInterface.OnClickListener
 	private boolean RECORD_GESTURE = false;
 	
 	private boolean DEBUG = true;
-	private boolean VERBOSE = false;
+	private boolean VERBOSE = true;
 	
 	
 	// dialog view for entering learning gesture
@@ -60,7 +62,7 @@ implements android.content.DialogInterface.OnClickListener
 	
 
 	final Handler alertHandler = new Handler();
-	public String detected_gid = "Unknown";
+	public static String detected_gid = "Unknown";
 	final Runnable showAlert = new Runnable() {
 		public void run()
 		{
@@ -71,9 +73,8 @@ implements android.content.DialogInterface.OnClickListener
 	
 	
 	private App.STATES state = App.STATES.STATE_LEARN;
-	
-	// private MENUITEMS menuitems;
 
+	// private MENUITEMS menuitems;
 	public void show_alert_box()
 	{
 		/*
@@ -213,36 +214,43 @@ implements android.content.DialogInterface.OnClickListener
 			// stop accelerometer
 	    	mSensorManager.unregisterListener(sensorListener);
 
-			
-			// save a reference to activity for this context
-			Thread t = new Thread()
-			{
-				public void run()
-				{
-						Gesture candidate = new Gesture(null, new ArrayList<float[]>(recordingGestureTrace));
-						if (DEBUG) Log.d("stopRecGesture-Thread","Attempting Gesture Recognition Trace-Length: " + recordingGestureTrace.size());
-						String gid = myGestureRecognizer.recognize_gesture(candidate);
-						if (DEBUG) Log.d("stopRecGesture-Thread","===================================== \n" +
-								"Recognized Gesture: "+ gid+
-								"\n===================================");
-						// set gid as currently detected gid
-						detected_gid = gid;
-						
-						// show the alert
-						alertHandler.post(showAlert);
+			//call worker to do recognition
+			ArrayList<float[]> recordingGestureTrace_copy = null;
+			rwl.writeLock().lock();
+			Log.d("stopRecGesture","List Locked");
+			try {
+				recordingGestureTrace_copy = new ArrayList<float[]>(recordingGestureTrace);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}finally{
+				rwl.writeLock().unlock();
+				Log.d("stopRecGesture","List UnLocked");
+			}
 
-				}
-			};	
-			t.start();	
+			Runnable r = new Worker(recordingGestureTrace_copy, DEBUG, myGestureRecognizer);
+			new Thread(r).start();
 			if (DEBUG) Log.d("stopRecordingGesture", "STATE_RECOGNIZE --> thread dispatched");
+			// show the alert
+			alertHandler.post(showAlert);
+
 			break;	
 		case STATE_LIBRARY:
 			break;
 		default:
 			break;
 		}
-		recordingGestureTrace.clear();
 
+		rwl.writeLock().lock();
+		Log.d("stopRecordingGesture", "clear gesture trace");
+		try {
+			if (DEBUG) Log.d("stopRecordingGesture", "List Locked");
+			recordingGestureTrace.clear();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally{
+			rwl.writeLock().unlock();
+			Log.d("stopRecordingGesture", "List UnLocked");
+		}
 	}
 	
 	
